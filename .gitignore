@@ -1,0 +1,26 @@
+# Ignore Office folder containing personal/work files
+Office/
+
+# Ignore Python virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Ignore Python bytecode compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore logs and temp files
+*.log
+.tmp/
+.temp/
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+
+.conda/
+artifacts/
