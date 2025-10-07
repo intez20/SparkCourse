@@ -1,19 +1,13 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Sep  7 15:28:00 2020
-
-@author: Frank
-"""
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as func
 from pyspark.sql.types import StructType, StructField, IntegerType, LongType
 import codecs
 
+# loading movie names into a dictionary
 def loadMovieNames():
     movieNames = {}
-    # CHANGE THIS TO THE PATH TO YOUR u.ITEM FILE:
-    with codecs.open("E:/SparkCourse/ml-100k/u.ITEM", "r", encoding='ISO-8859-1', errors='ignore') as f:
+    with codecs.open("C:/Users/syedi/Documents/Projects/personal-github/SparkCourse/ml-100k/u.ITEM", "r", encoding='ISO-8859-1', errors='ignore') as f:
         for line in f:
             fields = line.split('|')
             movieNames[int(fields[0])] = fields[1]
@@ -39,6 +33,7 @@ movieCounts = moviesDF.groupBy("movieID").count()
 def lookupName(movieID):
     return nameDict.value[movieID]
 
+# Register the udf
 lookupNameUDF = func.udf(lookupName)
 
 # Add a movieTitle column using our new udf
