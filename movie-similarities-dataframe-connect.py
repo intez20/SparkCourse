@@ -36,7 +36,7 @@ def getMovieName(movieNames, movieId):
     return result[0]
 
 
-spark = SparkSession.builder.appName("MovieSimilarities_GoodRatings").master("local[*]").getOrCreate()
+spark = SparkSession.builder.remote("sc://localhost:15002").appName("MovieSimilarities").getOrCreate()
 
 movieNamesSchema = StructType([ \
                                StructField("movieID", IntegerType(), True), \
@@ -56,21 +56,16 @@ movieNames = spark.read \
       .option("sep", "|") \
       .option("charset", "ISO-8859-1") \
       .schema(movieNamesSchema) \
-      .csv("SparkCourse/ml-100k/u.item")
+      .csv("file:///SparkCourse/ml-100k/u.item")
 
 # Load up movie data as dataset
 movies = spark.read \
       .option("sep", "\t") \
       .schema(moviesSchema) \
-      .csv("SparkCourse/ml-100k/u.data")
+      .csv("file:///SparkCourse/ml-100k/u.data")
 
-# Filter for only good ratings (>=3)
-print("Filtering for good ratings (3 stars or higher)...")
-ratings = movies.select("userId", "movieId", "rating") \
-      .filter(func.col("rating") >= 3)  # Only keep ratings of 3 or higher
 
-print(f"Total ratings count: {movies.count()}")
-print(f"Good ratings count after filtering: {ratings.count()}")
+ratings = movies.select("userId", "movieId", "rating")
 
 # Emit every movie rated together by the same user.
 # Self-join to find every combination.
@@ -83,7 +78,6 @@ moviePairs = ratings.alias("ratings1") \
         func.col("ratings1.rating").alias("rating1"), \
         func.col("ratings2.rating").alias("rating2"))
 
-print(f"Created {moviePairs.count()} movie pairs from good ratings.")
 
 moviePairSimilarities = computeCosineSimilarity(spark, moviePairs).cache()
 
@@ -102,7 +96,7 @@ if (len(sys.argv) > 1):
     # Sort by quality score.
     results = filteredResults.sort(func.col("score").desc()).take(10)
     
-    print ("Top 10 similar movies for " + getMovieName(movieNames, movieID) + " (using good ratings only)")
+    print ("Top 10 similar movies for " + getMovieName(movieNames, movieID))
     
     for result in results:
         # Display the similarity result that isn't the movie we're looking at
@@ -112,14 +106,4 @@ if (len(sys.argv) > 1):
         
         print(getMovieName(movieNames, similarMovieID) + "\tscore: " \
               + str(result.score) + "\tstrength: " + str(result.numPairs))
-
-# Key improvements:
-# 1. We're now filtering the dataset to only include ratings of 3 or higher 
-#    (on a scale of 1-5, where 3+ is considered a positive rating)
-# 2. This means we only recommend movies that people actually liked, 
-#    which improves the quality of recommendations
-# 3. By eliminating negative ratings, we prevent movies that are mutually disliked
-#    from being considered similar
-# 4. This approach reduces the dataset size, which can also improve performance
-# 5. The filter is applied before creating movie pairs, which means all similarity 
-#    calculations are based only on positive ratings
+        
